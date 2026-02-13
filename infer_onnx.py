@@ -155,7 +155,13 @@ def main():
         captions=[f"{text_prompt}: {s:.0%}" for s in scores],
         font_size=max(1, min(image.size) // 40),
     )
-    imgviz.io.pil_imshow(viz)
+    # Save result to images folder
+    output_dir = pathlib.Path("images")
+    output_dir.mkdir(exist_ok=True)
+    output_filename = f"{args.image.stem}_result_onnx.jpg"
+    output_path = output_dir / output_filename
+    PIL.Image.fromarray(viz).save(output_path)
+    logger.info("saved result to: {}", output_path)
 
 
 if __name__ == "__main__":

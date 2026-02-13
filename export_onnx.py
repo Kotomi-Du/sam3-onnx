@@ -12,7 +12,10 @@ from loguru import logger
 from numpy.typing import NDArray
 from osam._models.yoloworld.clip import tokenize
 from torchvision.transforms import v2
-
+import os, sys
+repo_root = os.path.abspath(r"C:\Users\yarudu\Documents\project\sam3-onnx\sam3")
+if repo_root not in sys.path:
+    sys.path.insert(0, repo_root)
 from infer_torch import get_replace_freqs_cis
 from sam3.model.sam3_image import Sam3Image  # type: ignore[unresolved-import]
 from sam3.model.sam3_image_processor import (  # type: ignore[unresolved-import]
@@ -56,8 +59,10 @@ def _export_image_encoder(
     if onnx_file.exists():
         logger.debug("onnx model already exists, skip export: {!r}", str(onnx_file))
     else:
+        # Move processor model to CPU for export
+        processor.model = processor.model.to("cpu")
         encoder: _ImageEncoder = _ImageEncoder(processor=processor)
-        input_image: torch.Tensor = v2.functional.to_image(image).to("cuda")
+        input_image: torch.Tensor = v2.functional.to_image(image).to("cpu")
 
         # with torch.no_grad():
         #     output = image_backbone(input_image)
@@ -122,8 +127,9 @@ def _export_language_encoder(processor: Sam3Processor) -> list[NDArray]:
     if onnx_file.exists():
         logger.debug("onnx model already exists, skip export: {!r}", str(onnx_file))
     else:
+        processor.model = processor.model.to("cpu")
         encoder: _LanguageEncoder = _LanguageEncoder(processor=processor)
-        tokens_input: torch.Tensor = torch.from_numpy(tokens).to("cuda")
+        tokens_input: torch.Tensor = torch.from_numpy(tokens).to("cpu")
 
         # with torch.no_grad():
         #     output = encoder(tokens=tokens_input)
@@ -153,7 +159,8 @@ class _Decoder(torch.nn.Module):
     def __init__(self) -> None:
         super().__init__()
         self._model: Sam3Image = build_sam3_image_model()
-        self._processor: Sam3Processor = Sam3Processor(self._model)
+        self._model = self._model.to("cpu")
+        self._processor: Sam3Processor = Sam3Processor(self._model, device = "cpu")
 
     def forward(
         self,
@@ -245,20 +252,20 @@ def _export_decoder(
         torch.onnx.export(
             decoder,
             args=(
-                torch.tensor(original_height).to("cuda"),
-                torch.tensor(original_width).to("cuda"),
-                torch.tensor(vision_pos_enc_0).to("cuda"),
-                torch.tensor(vision_pos_enc_1).to("cuda"),
-                torch.tensor(vision_pos_enc_2).to("cuda"),
-                torch.tensor(backbone_fpn_0).to("cuda"),
-                torch.tensor(backbone_fpn_1).to("cuda"),
-                torch.tensor(backbone_fpn_2).to("cuda"),
-                torch.tensor(language_mask).to("cuda"),
-                torch.tensor(language_features).to("cuda"),
-                torch.tensor(language_embeds).to("cuda"),
-                torch.tensor(box_coords).to("cuda"),
-                torch.tensor(box_labels).to("cuda"),
-                torch.tensor(box_masks).to("cuda"),
+                torch.tensor(original_height).to("cpu"),
+                torch.tensor(original_width).to("cpu"),
+                torch.tensor(vision_pos_enc_0).to("cpu"),
+                torch.tensor(vision_pos_enc_1).to("cpu"),
+                torch.tensor(vision_pos_enc_2).to("cpu"),
+                torch.tensor(backbone_fpn_0).to("cpu"),
+                torch.tensor(backbone_fpn_1).to("cpu"),
+                torch.tensor(backbone_fpn_2).to("cpu"),
+                torch.tensor(language_mask).to("cpu"),
+                torch.tensor(language_features).to("cpu"),
+                torch.tensor(language_embeds).to("cpu"),
+                torch.tensor(box_coords).to("cpu"),
+                torch.tensor(box_labels).to("cpu"),
+                torch.tensor(box_masks).to("cpu"),
             ),
             f=onnx_file,
             input_names=[
@@ -314,7 +321,7 @@ def _export_decoder(
 def main():
     model: Sam3Image = build_sam3_image_model()
     get_replace_freqs_cis(model)
-    processor: Sam3Processor = Sam3Processor(model)
+    processor: Sam3Processor = Sam3Processor(model,device="cpu")
 
     image: PIL.Image.Image = PIL.Image.open("images/bus.jpg")
     # image: PIL.Image.Image = PIL.Image.open("2011_000006.jpg")
