@@ -1,4 +1,4 @@
 [submodule "sam3"]
 	path = sam3
-	url = https://github.com/wkentaro/sam3.git
-	branch = onnx
+	url = https://github.com/Kotomi-Du/sam3.git
+	branch = ov_convert
