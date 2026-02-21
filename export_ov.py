@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import argparse
 import pathlib
 import typing
 
@@ -29,12 +30,10 @@ import openvino as ov
 
 
 def convert_onnx_to_ov(onnx_path, ov_model_path):
-    onnx_path = "models/sam3_decoder.onnx"
     core = ov.Core()
     ov_model = core.read_model(str(onnx_path))
 
     # Save OpenVINO IR
-    ov_model_path = Path(onnx_path.replace(".onnx", ".xml"))
     ov.save_model(ov_model, str(ov_model_path))
     print(f"✓ OpenVINO model saved to {ov_model_path}")
 
@@ -149,7 +148,7 @@ def _export_decoder(
     }) 
     return output
 
-def main():
+def main_torch():
     model: Sam3Image = build_sam3_image_model()
     # Set model to eval mode for inference
     model.eval()
@@ -226,7 +225,47 @@ def main():
     logger.info("saved result to: {}", output_path)
     
 
+def main_onnx():
+    # Convert image encoder
+    onnx_path = "models/sam3_image_encoder.onnx"
+    ov_model_path = "models/sam3_image_encoder.xml"
+    convert_onnx_to_ov(onnx_path, ov_model_path)
+    
+    # Convert language encoder
+    onnx_path = "models/sam3_language_encoder.onnx"
+    ov_model_path = "models/sam3_language_encoder.xml"
+    convert_onnx_to_ov(onnx_path, ov_model_path)
+    
+    # Convert decoder
+    onnx_path = "models/sam3_decoder.onnx"
+    ov_model_path = "models/sam3_decoder.xml"
+    convert_onnx_to_ov(onnx_path, ov_model_path)
+
+
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+        description="Export SAM3 models to OpenVINO format",
+    )
+    parser.add_argument(
+        "--mode",
+        type=str,
+        choices=["torch", "onnx"],
+        default="torch",
+        help="Export mode: 'torch' exports from PyTorch to OpenVINO, 'onnx' converts existing ONNX models to OpenVINO",
+    )
+    return parser.parse_args()
 
 
 if __name__ == "__main__":
-    main()
+    args = parse_args()
+    
+    if args.mode == "torch":
+        logger.info("Exporting from PyTorch to OpenVINO...")
+        main_torch()
+    elif args.mode == "onnx":
+        logger.info("Converting ONNX models to OpenVINO...")
+        main_onnx()
+    else:
+        logger.error(f"Unknown mode: {args.mode}")
+        sys.exit(1)

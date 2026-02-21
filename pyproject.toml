@@ -8,6 +8,7 @@ dependencies = [
     "onnxruntime>=1.23.2",
     "opencv-python>=4.11.0.86",
     "osam>=0.2.5",
+    "openvino>=2025.4.1",
 ]
 
 [tool.uv.workspace]
