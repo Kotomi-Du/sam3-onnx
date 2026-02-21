@@ -8,7 +8,7 @@
 # set up python envirionment
 pip install uv
 
-git clone https://github.com/wkentaro/sam3-onnx.git --recursive && cd sam3-onnx
+git clone https://github.com/Kotomi-Du/sam3-onnx.git --recursive && cd sam3-onnx
 
 uvx hf download wkentaro/sam3-onnx-models --local-dir models  # download pre-exported models
 
@@ -28,13 +28,14 @@ uv run --no-dev infer_openvino.py --image images/dog.jpg --box-prompt --device C
 ## Installation
 
 ```sh
-git clone https://github.com/wkentaro/sam3-onnx.git --recursive && cd sam3-onnx
+git clone https://github.com/Kotomi-Du/sam3-onnx.git --recursive && cd sam3-onnx
 uv sync  # dev mode for exporting onnx unlike --no-dev
 ```
 
 ## Usage
 
 **Inference with pytorch**
+
 Prerequisite: CUDA device
 
 ```sh
@@ -75,7 +76,7 @@ uv run infer_onnx.py --image images/bus.jpg --box-prompt  # opens a gui to selec
 # Option 1: Convert existing ONNX models to OpenVINO
 uv run export_ov.py --mode onnx
 
-# Option 2: Export directly from PyTorch to OpenVINO
+# Option 2: Export directly from PyTorch to OpenVINO (known issue when converting decoder model)
 uv run export_ov.py --mode torch
 ```
 
